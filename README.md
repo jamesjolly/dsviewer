@@ -7,6 +7,11 @@ To get started, add the appropriate DepthSenseSDK include and lib dirs to
 the include_directories and link_directories lists in CMakeLists.txt. Then
 build as you would any PCL project:
 
+```
 cmake CMakeLists.txt
 make
+./dsviewer
+```
+
+(press 'r' to automatically rescale view once you connect the device)
 

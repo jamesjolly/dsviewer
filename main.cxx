@@ -1,16 +1,13 @@
 
-#include <stdio.h>
 #include <vector>
 #include <exception>
+#include <iostream>
 using namespace std;
 
 #include <DepthSense.hxx>
 using namespace DepthSense;
 
 #include <pcl/visualization/cloud_viewer.h>
-#include <iostream>
-#include <pcl/io/io.h>
-#include <pcl/io/pcd_io.h>
 
 const int c_PIXEL_COUNT = 76800; // 320x240
 const int c_MIN_Z = 100; // discard points closer than this
@@ -45,7 +42,7 @@ void onNewDepthSample(DepthNode node, DepthNode::NewSampleReceivedData data)
 }
 
 // we're only using the vertices feed
-void configureNode(Node node)
+void configureDepthNode(Node node)
 {
     if (node.is<DepthNode>() && !g_dnode.isSet())
     {
@@ -61,6 +58,7 @@ void configureNode(Node node)
         {
             g_context.requestControl(g_dnode, 0);
             g_dnode.setConfiguration(config);
+            cout << "depth node connected\n";
         }
         catch (Exception& e)
         {
@@ -70,18 +68,20 @@ void configureNode(Node node)
     }
 }
 
+// event handler: setup vertices feed
 void onNodeConnected(Device device, Device::NodeAddedData data)
 {
-    configureNode(data.node);
+    configureDepthNode(data.node);
 }
 
+// event handler: tear down vertices feed
 void onNodeDisconnected(Device device, Device::NodeRemovedData data)
 {
     if (data.node.is<DepthNode>() && (data.node.as<DepthNode>() == g_dnode))
     {
         g_dnode.unset();
+        cout << "depth node disconnected\n";
     }
-    cout << "Node disconnected\n";
 }
 
 // event handler: device plugged in
@@ -99,7 +99,7 @@ void onDeviceConnected(Context context, Context::DeviceAddedData data)
 void onDeviceDisconnected(Context context, Context::DeviceRemovedData data)
 {
     g_bDeviceFound = false;
-    cout << "Device disconnected\n";
+    cout << "device disconnected\n";
 }
 
 int main(int argc, char** argv)
@@ -107,12 +107,7 @@ int main(int argc, char** argv)
     g_context = Context::create("localhost");
     g_context.deviceAddedEvent().connect(&onDeviceConnected);
     g_context.deviceRemovedEvent().connect(&onDeviceDisconnected);
-
-    pcl::PointXYZ pt(0, 0, 0);
-    for (int i = 0; i < c_PIXEL_COUNT; i++)
-    {
-        cloud->points.push_back(pt);
-    }
+    cloud->points.resize(c_PIXEL_COUNT);
 
     // get list of devices already connected
     vector<Device> da = g_context.getDevices();
@@ -127,7 +122,7 @@ int main(int argc, char** argv)
         cout << "found " << (int)na.size() << " nodes\n";
         for (int n = 0; n < (int)na.size(); n++)
         {
-            configureNode(na[n]);
+            configureDepthNode(na[n]);
         }
     }
 
